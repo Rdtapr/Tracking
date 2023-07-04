@@ -5,8 +5,8 @@
 
 String cardIdContainer;
 
-byte sda = 14;
-byte rst = 13;
+byte sda = 19;
+byte rst = 23;
 
 #define TXD2 17
 #define RXD2 16
@@ -30,8 +30,8 @@ byte outStr[255];
 int port, channel, freq;
 #define MSG_BUFFER_SIZE (150)
 // tipe_data#latitude#longitude#plat_nomor
-char msg[MSG_BUFFER_SIZE] = "{\"p\":\"%s#%.6f#%.6f#S3637KH\"}";
-char card[MSG_BUFFER_SIZE] = "{\"p\":\"%s#%.6f#%.6f#%s#S3637KH\"}";
+char msg[MSG_BUFFER_SIZE] = "{\"p\":\"%s#%.6f#%.6f#B1PNJ\"}";
+char card[MSG_BUFFER_SIZE] = "{\"p\":\"%s#%.6f#%.6f#%s#B1PNJ\"}";
 char pesan[150];
 const sRFM_pins RFM_pins = {
  .CS = 5,
@@ -48,7 +48,7 @@ void setup() {
  rfid.PCD_Init();
  delay(2000);
   if (!lora.init()) {
-    Serial.println("RFM95 not detected");
+    Serial.println("RFM96 not detected");
  delay(5000);
  return;
  }
@@ -68,6 +68,16 @@ void loop() {
   
   while (Serial2.available() > 0){
     gps.encode(Serial2.read());
+      if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
+    cardIdContainer = "";
+    for (byte i = 0; i < rfid.uid.size; i++) {
+      cardIdContainer.concat(String(rfid.uid.uidByte[i] < 0x10 ? " 0" : ""));
+      cardIdContainer.concat(String(rfid.uid.uidByte[i], HEX));
+    }
+    Serial.print("CARD ID: ");
+    Serial.println(cardIdContainer);
+    delay(2500);
+  }
      if (gps.location.isValid()){
       lat = gps.location.lat();
       lng = gps.location.lng();
@@ -90,17 +100,21 @@ void loop() {
         Serial.print(F("Freq: ")); Serial.print(freq); Serial.println(" ");
         previousMillis = millis();
       }
-    
 
-    
     }
+     lora.update();
+  }
+  }
+
+    /*
       if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
         cardIdContainer = "";
         for (byte i = 0; i < rfid.uid.size; i++) {
           cardIdContainer.concat(String(rfid.uid.uidByte[i] < 0x10 ? " 0" : ""));
           cardIdContainer.concat(String(rfid.uid.uidByte[i], HEX));
         }
-        sprintf(cardStr, card, "pos",lat,lng, cardIdContainer);
+    
+         sprintf(cardStr, card, "pos",lat,lng);
                 lora.sendUplink(cardStr, strlen(cardStr), 0);
         port = lora.getFramePortTx();
         channel = lora.getChannel();
@@ -111,11 +125,11 @@ void loop() {
 
         delay(2500);
       }
-    lora.update();
-  }
+      */
+//    lora.update();
+//  }
  
- 
- /*
+/* 
   if (millis() - previousMillis > interval) {
     isGpsValid = false;
     Serial.println("MENGIRIM DATA KE GATEWAY");
@@ -131,9 +145,7 @@ void loop() {
     Serial.print(F("Freq: ")); Serial.print(freq); Serial.println(" ");
     previousMillis = millis();
   }
- */
  lora.update();
 
-
- 
 }
+*/
