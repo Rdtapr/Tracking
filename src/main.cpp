@@ -8,7 +8,7 @@
 #define RXD2 16
 #define RFID_RST 26
 #define RFID_SS 25
-#define PANIC_BUTTON 17
+#define PANIC_BUTTON 22
 
 // ABP Credential
 const char *devAddr = "64842a1d"; // Ganti dengan device adrress masing masing
