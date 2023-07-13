@@ -16,11 +16,12 @@ const char *appSKey =
     "64842a1dd9b9c97d3c766d61458474b7"; // Ganti dengan Apps Key masing masing
 const char *nwkSKey =
     "64842a1dc63216758cb18b2c6b7a48e4"; // Ganti dengan Nwks Key masing masing
-char myStr[50];
+char LOCATION_STRING[50];
 char CARD_STRING[50];
 char BUTTON_STRING[50];
 // tipe_data#latitude#longitude#plat_nomor
-char msg[MSG_BUFFER_SIZE] = "{\"p\":\"%s#%.6f#%.6f#S3637KH\"}";
+char LOCATION_PAYLOAD_STRUCTURE[MSG_BUFFER_SIZE] =
+    "{\"p\":\"%s#%.6f#%.6f#S3637KH\"}";
 
 char CARD_PAYLOAD_STRUCTURE[MSG_BUFFER_SIZE] =
     "{\"p\":\"%s#%.4f#%.3f#%s#S3637KH\"}"; // TIPE (C) ==> CARD
@@ -42,6 +43,7 @@ const sRFM_pins RFM_pins = {
 unsigned long interval = 10000; // interval pengiriman data 10 detik
 unsigned long previousMillis = 0;
 int port, channel, freq;
+float lastLatatitude, lastLongitude;
 
 String cardIdContainer;
 boolean isGpsValid = false;
@@ -84,7 +86,8 @@ void loop() {
   // PANIC BUTTON
   if (digitalRead(PANIC_BUTTON) == HIGH) {
     Serial.println("PANIC BUTTON");
-    sprintf(BUTTON_STRING, BUTTON_PAYLOAD_STRUCTURE, -6.36310, 106.8220);
+    sprintf(BUTTON_STRING, BUTTON_PAYLOAD_STRUCTURE, lastLatatitude,
+            lastLongitude);
     lora.sendUplink(BUTTON_STRING, strlen(BUTTON_STRING), 0);
   }
 
@@ -96,8 +99,8 @@ void loop() {
       cardIdContainer.concat(String(rfid.uid.uidByte[i], HEX));
     }
     Serial.println(cardIdContainer);
-    sprintf(CARD_STRING, CARD_PAYLOAD_STRUCTURE, "C", -6.36310, 106.8220,
-            cardIdContainer);
+    sprintf(CARD_STRING, CARD_PAYLOAD_STRUCTURE, "C", lastLatatitude,
+            lastLongitude, cardIdContainer);
     lora.sendUplink(CARD_STRING, strlen(CARD_STRING), 0);
     delay(2500);
   }
@@ -108,12 +111,21 @@ void loop() {
   }
 
   if (gps.location.isUpdated()) {
+    lastLatatitude = gps.location.lat();
+    lastLongitude = gps.location.lng();
     Serial.print("Latitude");
-    Serial.println(gps.location.lat());
+    Serial.println(lastLatatitude);
     Serial.print("Longitude");
-    Serial.println(gps.location.lng());
+    Serial.println(lastLongitude);
 
     // SEND DATA TO LORA HERE
+    if (millis() - previousMillis > interval) {
+      previousMillis = millis();
+      Serial.println("KIRIM DATA KE LORA");
+      sprintf(LOCATION_STRING, LOCATION_PAYLOAD_STRUCTURE, "L", lastLatatitude,
+              lastLongitude);
+      lora.sendUplink(LOCATION_STRING, strlen(LOCATION_STRING), 0);
+    }
   }
 
   lora.update();
